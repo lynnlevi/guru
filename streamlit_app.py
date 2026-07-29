@@ -48,7 +48,7 @@ def load_prompt(mode):
 # Streamlit re-runs the whole script on each interaction, so these re-read the
 # files each time — meaning local edits show up on the next interaction.
 MODE_PROMPTS = {mode: load_prompt(mode) for mode in PROMPT_FILES}
-MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🧭 How to get there"}
+MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🛠️ Build an action plan"}
 
 # Secrets come from Streamlit's Secrets manager, never hardcoded.
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
@@ -137,37 +137,44 @@ chat_col, right_col = st.columns([2, 1], gap="large")
 # LEFT: the chat
 # ---------------------------------------------------------------------------
 with chat_col:
-    st.title("Chat away 🔮")
+    st.title("Guru Lynn 🔮")
+    st.caption("Your chatty friend reincarnated as an AI")
     st.caption(f"Mode: {MODE_LABELS[st.session_state.mode]}")
 
-    # The conversation lives in a fixed-height, scrollable box. Only this area
-    # scrolls, so the menu on the right stays put while you scroll the chat.
-    chat_box = st.container(height=460)
-    with chat_box:
-        for m in st.session_state.messages:
-            with st.chat_message(m["role"]):
-                st.markdown(m["content"])
+    if st.session_state.mode == "howto":
+        # This mode isn't built yet — show a cheeky placeholder, no chat.
+        st.info("Lynn hasn't figured this out yet muahahaha =)))")
+    else:
+        # The conversation lives in a fixed-height, scrollable box. Only this
+        # area scrolls, so the menu on the right stays put while you scroll.
+        chat_box = st.container(height=460)
+        with chat_box:
+            for m in st.session_state.messages:
+                with st.chat_message(m["role"]):
+                    st.markdown(m["content"])
 
-        # If a reply is pending, generate it here — the user's message is
-        # already shown above, and the bot's "Thinking..." bubble appears in
-        # place, right where the reply will land.
-        if st.session_state.pending:
-            with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
-                    reply = get_reply(
-                        st.session_state.messages,
-                        MODE_PROMPTS[st.session_state.mode],
-                    )
-                st.markdown(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply})
-            st.session_state.pending = False
+            # If a reply is pending, generate it here — the user's message is
+            # already shown above, and the bot's "Thinking..." bubble appears
+            # in place, right where the reply will land.
+            if st.session_state.pending:
+                with st.chat_message("assistant"):
+                    with st.spinner("Thinking..."):
+                        reply = get_reply(
+                            st.session_state.messages,
+                            MODE_PROMPTS[st.session_state.mode],
+                        )
+                    st.markdown(reply)
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": reply}
+                )
+                st.session_state.pending = False
 
-    # Input sits below the chat box. On submit we show the user's message and
-    # flag a pending reply, then rerun so the thinking bubble renders in place.
-    if prompt := st.chat_input("Say something..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.session_state.pending = True
-        st.rerun()
+        # Input sits below the chat box. On submit we show the user's message
+        # and flag a pending reply, then rerun so the bubble renders in place.
+        if prompt := st.chat_input("Say something..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.session_state.pending = True
+            st.rerun()
 
 # ---------------------------------------------------------------------------
 # RIGHT: menu (part 1) + email chat (part 2)
