@@ -26,7 +26,7 @@ from openai import OpenAI
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-MODEL = "gpt-4o-mini"
+MODEL = "gpt-5.4-mini"
 
 # Each mode's system prompt lives in its own text file so you can edit the
 # wording without touching this code. Just edit the .txt files and push.
