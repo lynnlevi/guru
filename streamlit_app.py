@@ -48,7 +48,7 @@ def load_prompt(mode):
 # Streamlit re-runs the whole script on each interaction, so these re-read the
 # files each time — meaning local edits show up on the next interaction.
 MODE_PROMPTS = {mode: load_prompt(mode) for mode in PROMPT_FILES}
-MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🧭 How to get there"}
+MODE_LABELS = {"explore": "🤷 I have none or too many goals", "howto": "🗺️ I need a plan"}
 
 # Secrets come from Streamlit's Secrets manager, never hardcoded.
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
@@ -109,7 +109,7 @@ if "mode" not in st.session_state:
 LYNN_MESSAGE = (
     "Send your chat to Lynn so she can be nosy about you =)))))))) "
     "Just kidding, but honestly your record can help her refine the bot — "
-    "and if she's really nosy, she'll contact you for more chit chat."
+    "and if she's really that nosy, she'll contact you for more chit chat."
 )
 
 # Left = chat, Right = menu + email panel
