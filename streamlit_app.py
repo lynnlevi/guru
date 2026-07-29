@@ -1,6 +1,6 @@
 """
 Fun little chatbot for friends — Streamlit version.
-- Control the system prompt (edit SYSTEM_PROMPT below)
+- Two modes swap the system prompt: "Explore my goal" and "How to get there"
 - Observability via MLflow Tracing (one-line autolog)
 - Email the transcript to the user and/or to Lynn
 
@@ -23,12 +23,30 @@ import mlflow
 from openai import OpenAI
 
 # ---------------------------------------------------------------------------
-# Configuration — the parts you'll actually want to tweak
+# Configuration
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = "You are a witty, warm assistant for Lynn's friends. Keep it fun."
 MODEL = "gpt-4o-mini"
 
-# Secrets come from Streamlit's Secrets manager (st.secrets), never hardcoded.
+# Each mode is just a different system prompt. Add or edit freely.
+MODE_PROMPTS = {
+    "explore": (
+        "You are Lynn's warm, witty guru bot, in 'Explore my goal' mode. "
+        "Your job is to help the person figure out and put into words what they "
+        "actually want. Ask thoughtful questions, turn vague wishes into concrete "
+        "goals, and reflect back what you hear. Stay encouraging and a little "
+        "playful. Don't jump to action plans yet — focus on the what and the why."
+    ),
+    "howto": (
+        "You are Lynn's warm, witty guru bot, in 'How to get there' mode. "
+        "The person already has a goal in mind; help them map concrete steps to "
+        "reach it. Break big goals into realistic milestones, suggest a clear first "
+        "step, and gently flag likely obstacles. Stay encouraging, practical, and "
+        "a little playful. Focus on the how."
+    ),
+}
+MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🧭 How to get there"}
+
+# Secrets come from Streamlit's Secrets manager, never hardcoded.
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 SMTP_USER = st.secrets["SMTP_USER"]
 SMTP_PASS = st.secrets["SMTP_PASS"]
@@ -46,9 +64,8 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 @mlflow.trace
-def get_reply(history):
-    """history is a list of {'role', 'content'} dicts including the latest user msg."""
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
+def get_reply(history, system_prompt):
+    messages = [{"role": "system", "content": system_prompt}] + history
     resp = client.chat.completions.create(model=MODEL, messages=messages)
     return resp.choices[0].message.content
 
@@ -76,44 +93,65 @@ def send_email(to_addr, subject, body):
 
 
 # ---------------------------------------------------------------------------
-# UI
+# Page + state
 # ---------------------------------------------------------------------------
+st.set_page_config(page_title="Lynn's Guru", page_icon="🔮", layout="wide")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "mode" not in st.session_state:
+    st.session_state.mode = "explore"
+
 LYNN_MESSAGE = (
     "Send your chat to Lynn so she can be nosy about you =)))))))) "
     "Just kidding, but honestly your record can help her refine the bot — "
     "and if she's really nosy, she'll contact you for more chit chat."
 )
 
-st.set_page_config(page_title="Lynn's Guru", page_icon="🔮")
-st.title("Chat away 🔮")
-
-# Streamlit reruns the whole script on every interaction, so we keep the
-# conversation in session_state to persist it across reruns.
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# Replay the conversation so far.
-for m in st.session_state.messages:
-    with st.chat_message(m["role"]):
-        st.markdown(m["content"])
-
-# Chat input at the bottom.
-if prompt := st.chat_input("Say something..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            reply = get_reply(st.session_state.messages)
-        st.markdown(reply)
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+# Left = chat, Right = menu + email panel
+chat_col, right_col = st.columns([2, 1], gap="large")
 
 # ---------------------------------------------------------------------------
-# End-of-session export
+# LEFT: the chat
 # ---------------------------------------------------------------------------
-with st.sidebar:
-    st.header("Done chatting?")
+with chat_col:
+    st.title("Chat away 🔮")
+    st.caption(f"Mode: {MODE_LABELS[st.session_state.mode]}")
+
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+
+    if prompt := st.chat_input("Say something..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                reply = get_reply(
+                    st.session_state.messages,
+                    MODE_PROMPTS[st.session_state.mode],
+                )
+            st.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+
+# ---------------------------------------------------------------------------
+# RIGHT: menu (part 1) + email chat (part 2)
+# ---------------------------------------------------------------------------
+with right_col:
+    # --- Part 1: menu ---
+    st.subheader("Menu")
+    if st.button(MODE_LABELS["explore"], use_container_width=True):
+        st.session_state.mode = "explore"
+        st.rerun()
+    if st.button(MODE_LABELS["howto"], use_container_width=True):
+        st.session_state.mode = "howto"
+        st.rerun()
+
+    st.divider()
+
+    # --- Part 2: email the chat ---
+    st.subheader("Done chatting?")
     st.caption("Grab a copy of your conversation.")
     user_email = st.text_input("Your email (optional)", placeholder="you@example.com")
     send_to_lynn = st.checkbox(LYNN_MESSAGE)
