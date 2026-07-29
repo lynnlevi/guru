@@ -105,6 +105,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "mode" not in st.session_state:
     st.session_state.mode = "explore"
+if "pending" not in st.session_state:
+    st.session_state.pending = False
 
 LYNN_MESSAGE = (
     "Send your chat to Lynn so she can be nosy about you =)))))))) "
@@ -122,22 +124,33 @@ with chat_col:
     st.title("Chat away 🔮")
     st.caption(f"Mode: {MODE_LABELS[st.session_state.mode]}")
 
-    # Show the whole conversation so far — scroll up for older messages.
-    for m in st.session_state.messages:
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
+    # The conversation lives in a fixed-height, scrollable box. Only this area
+    # scrolls, so the menu on the right stays put while you scroll the chat.
+    chat_box = st.container(height=460)
+    with chat_box:
+        for m in st.session_state.messages:
+            with st.chat_message(m["role"]):
+                st.markdown(m["content"])
 
-    # The input sits below the latest message. On submit we append the new
-    # messages and rerun, so they always render in the history above the box
-    # (instead of getting stranded underneath it).
+        # If a reply is pending, generate it here — the user's message is
+        # already shown above, and the bot's "Thinking..." bubble appears in
+        # place, right where the reply will land.
+        if st.session_state.pending:
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    reply = get_reply(
+                        st.session_state.messages,
+                        MODE_PROMPTS[st.session_state.mode],
+                    )
+                st.markdown(reply)
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.session_state.pending = False
+
+    # Input sits below the chat box. On submit we show the user's message and
+    # flag a pending reply, then rerun so the thinking bubble renders in place.
     if prompt := st.chat_input("Say something..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.spinner("Thinking..."):
-            reply = get_reply(
-                st.session_state.messages,
-                MODE_PROMPTS[st.session_state.mode],
-            )
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+        st.session_state.pending = True
         st.rerun()
 
 # ---------------------------------------------------------------------------
