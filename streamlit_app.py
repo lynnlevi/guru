@@ -101,6 +101,22 @@ def send_email(to_addr, subject, body):
 # ---------------------------------------------------------------------------
 st.set_page_config(page_title="Lynn's Guru", page_icon="🔮", layout="wide")
 
+# Fit the app to one screen: trim Streamlit's big default padding, and make the
+# scrollable chat box size itself to the viewport so only the chat scrolls.
+st.markdown(
+    """
+    <style>
+      /* trim the large default top/bottom padding */
+      .block-container { padding-top: 2.5rem; padding-bottom: 1rem; }
+      /* the chat history box (the only bordered container) fills the screen */
+      div[data-testid="stVerticalBlockBorderWrapper"] {
+          height: calc(100vh - 210px) !important;
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "mode" not in st.session_state:
