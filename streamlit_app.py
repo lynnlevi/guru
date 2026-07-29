@@ -119,7 +119,7 @@ st.markdown(
 
 GREETING = (
     "Need some clarity but don't wanna be judged by the real Lynn? "
-    "Dump it here and leave with ammo to harass her later. 🔮"
+    "Dump it here and leave with ammo to harass her later. 😏"
 )
 
 
