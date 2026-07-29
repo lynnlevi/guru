@@ -99,7 +99,7 @@ def send_email(to_addr, subject, body):
 # ---------------------------------------------------------------------------
 # Page + state
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="Lynn's Guru", page_icon="🔮", layout="wide")
+st.set_page_config(page_title="Guru Lynn", page_icon="🔮", layout="wide")
 
 # Fit the app to one screen: trim Streamlit's big default padding, and make the
 # scrollable chat box size itself to the viewport so only the chat scrolls.
