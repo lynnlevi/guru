@@ -16,6 +16,7 @@ Secrets panel (NOT in the code / GitHub repo):
 
 import smtplib
 import ssl
+import os
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -59,10 +60,29 @@ LYNN_EMAIL = st.secrets["LYNN_EMAIL"]
 # ---------------------------------------------------------------------------
 # Observability: MLflow Tracing (one-line autolog)
 # ---------------------------------------------------------------------------
-if "MLFLOW_TRACKING_URI" in st.secrets:
-    mlflow.set_tracking_uri(st.secrets["MLFLOW_TRACKING_URI"])
-mlflow.set_experiment("friends-chatbot")
-mlflow.openai.autolog()
+try:
+    tracking_uri = st.secrets.get("MLFLOW_TRACKING_URI")  # "databricks" for hosted
+    if tracking_uri:
+        # Databricks-managed MLflow authenticates via these env vars.
+        if "DATABRICKS_HOST" in st.secrets:
+            os.environ["DATABRICKS_HOST"] = st.secrets["DATABRICKS_HOST"]
+        if "DATABRICKS_TOKEN" in st.secrets:
+            os.environ["DATABRICKS_TOKEN"] = st.secrets["DATABRICKS_TOKEN"]
+        mlflow.set_tracking_uri(tracking_uri)
+
+    # On Databricks the experiment must be a workspace path (starts with "/").
+    experiment = st.secrets.get("MLFLOW_EXPERIMENT")
+    if not experiment:
+        experiment = (
+            "/Shared/friends-chatbot"
+            if tracking_uri == "databricks"
+            else "friends-chatbot"
+        )
+    mlflow.set_experiment(experiment)
+    mlflow.openai.autolog()
+except Exception as e:
+    # Tracing is optional — a bad token or connection must never break the chat.
+    print(f"MLflow setup skipped: {e}")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
