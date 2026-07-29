@@ -117,8 +117,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+GREETING = (
+    "Need some clarity but don't wanna be judged by the real Lynn? "
+    "Dump it here and leave with ammo to harass her later. 🔮"
+)
+
+
+def fresh_chat():
+    """Start a conversation with Guru Lynn's greeting already in place."""
+    return [{"role": "assistant", "content": GREETING}]
+
+
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = fresh_chat()
 if "mode" not in st.session_state:
     st.session_state.mode = "explore"
 if "pending" not in st.session_state:
@@ -184,7 +195,7 @@ with right_col:
     # Clicking a mode starts a fresh conversation in that mode.
     def switch_mode(mode):
         st.session_state.mode = mode
-        st.session_state.messages = []
+        st.session_state.messages = fresh_chat()
         st.session_state.pending = False
 
     st.subheader("Menu")
