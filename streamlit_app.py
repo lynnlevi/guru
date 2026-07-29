@@ -48,7 +48,7 @@ def load_prompt(mode):
 # Streamlit re-runs the whole script on each interaction, so these re-read the
 # files each time — meaning local edits show up on the next interaction.
 MODE_PROMPTS = {mode: load_prompt(mode) for mode in PROMPT_FILES}
-MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🛠️ Build an action plan"}
+MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🛠️ Let's make a plan"}
 
 # Secrets come from Streamlit's Secrets manager, never hardcoded.
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
