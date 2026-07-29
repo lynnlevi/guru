@@ -17,6 +17,7 @@ Secrets panel (NOT in the code / GitHub repo):
 import smtplib
 import ssl
 from email.message import EmailMessage
+from pathlib import Path
 
 import streamlit as st
 import mlflow
@@ -27,23 +28,26 @@ from openai import OpenAI
 # ---------------------------------------------------------------------------
 MODEL = "gpt-4o-mini"
 
-# Each mode is just a different system prompt. Add or edit freely.
-MODE_PROMPTS = {
-    "explore": (
-        "You are Lynn's warm, witty guru bot, in 'Explore my goal' mode. "
-        "Your job is to help the person figure out and put into words what they "
-        "actually want. Ask thoughtful questions, turn vague wishes into concrete "
-        "goals, and reflect back what you hear. Stay encouraging and a little "
-        "playful. Don't jump to action plans yet — focus on the what and the why."
-    ),
-    "howto": (
-        "You are Lynn's warm, witty guru bot, in 'How to get there' mode. "
-        "The person already has a goal in mind; help them map concrete steps to "
-        "reach it. Break big goals into realistic milestones, suggest a clear first "
-        "step, and gently flag likely obstacles. Stay encouraging, practical, and "
-        "a little playful. Focus on the how."
-    ),
-}
+# Each mode's system prompt lives in its own text file so you can edit the
+# wording without touching this code. Just edit the .txt files and push.
+PROMPT_DIR = Path(__file__).parent
+PROMPT_FILES = {"explore": "explore_prompt.txt", "howto": "howto_prompt.txt"}
+
+
+def load_prompt(mode):
+    """Read a mode's prompt from its text file (re-read on every rerun)."""
+    try:
+        text = (PROMPT_DIR / PROMPT_FILES[mode]).read_text(encoding="utf-8").strip()
+        if text:
+            return text
+    except FileNotFoundError:
+        pass
+    return "You are a warm, witty assistant. (Prompt file missing — using fallback.)"
+
+
+# Streamlit re-runs the whole script on each interaction, so these re-read the
+# files each time — meaning local edits show up on the next interaction.
+MODE_PROMPTS = {mode: load_prompt(mode) for mode in PROMPT_FILES}
 MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🧭 How to get there"}
 
 # Secrets come from Streamlit's Secrets manager, never hardcoded.
