@@ -174,12 +174,18 @@ with chat_col:
 # ---------------------------------------------------------------------------
 with right_col:
     # --- Part 1: menu ---
+    # Clicking a mode starts a fresh conversation in that mode.
+    def switch_mode(mode):
+        st.session_state.mode = mode
+        st.session_state.messages = []
+        st.session_state.pending = False
+
     st.subheader("Menu")
     if st.button(MODE_LABELS["explore"], use_container_width=True):
-        st.session_state.mode = "explore"
+        switch_mode("explore")
         st.rerun()
     if st.button(MODE_LABELS["howto"], use_container_width=True):
-        st.session_state.mode = "howto"
+        switch_mode("howto")
         st.rerun()
 
     st.divider()
