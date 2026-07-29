@@ -26,7 +26,7 @@ from openai import OpenAI
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-MODEL = "gpt-5.4-mini"
+MODEL = "gpt-4o-mini"
 
 # Each mode's system prompt lives in its own text file so you can edit the
 # wording without touching this code. Just edit the .txt files and push.
@@ -48,7 +48,7 @@ def load_prompt(mode):
 # Streamlit re-runs the whole script on each interaction, so these re-read the
 # files each time — meaning local edits show up on the next interaction.
 MODE_PROMPTS = {mode: load_prompt(mode) for mode in PROMPT_FILES}
-MODE_LABELS = {"explore": "🤷 I have none or too many goals", "howto": "🗺️ I need a plan"}
+MODE_LABELS = {"explore": "🌱 Explore my goal", "howto": "🧭 How to get there"}
 
 # Secrets come from Streamlit's Secrets manager, never hardcoded.
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
@@ -109,7 +109,7 @@ if "mode" not in st.session_state:
 LYNN_MESSAGE = (
     "Send your chat to Lynn so she can be nosy about you =)))))))) "
     "Just kidding, but honestly your record can help her refine the bot — "
-    "and if she's really that nosy, she'll contact you for more chit chat."
+    "and if she's really nosy, she'll contact you for more chit chat."
 )
 
 # Left = chat, Right = menu + email panel
@@ -122,22 +122,23 @@ with chat_col:
     st.title("Chat away 🔮")
     st.caption(f"Mode: {MODE_LABELS[st.session_state.mode]}")
 
+    # Show the whole conversation so far — scroll up for older messages.
     for m in st.session_state.messages:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
+    # The input sits below the latest message. On submit we append the new
+    # messages and rerun, so they always render in the history above the box
+    # (instead of getting stranded underneath it).
     if prompt := st.chat_input("Say something..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                reply = get_reply(
-                    st.session_state.messages,
-                    MODE_PROMPTS[st.session_state.mode],
-                )
-            st.markdown(reply)
+        with st.spinner("Thinking..."):
+            reply = get_reply(
+                st.session_state.messages,
+                MODE_PROMPTS[st.session_state.mode],
+            )
         st.session_state.messages.append({"role": "assistant", "content": reply})
+        st.rerun()
 
 # ---------------------------------------------------------------------------
 # RIGHT: menu (part 1) + email chat (part 2)
